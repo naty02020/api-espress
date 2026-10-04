@@ -1,32 +1,34 @@
-app.put('/agendamentos/:id', (req, res) => {
+app.delete('/agendamentos/:id', (req, res) => {
 
   const id = parseInt(req.params.id);
 
-  const agendamento = agendamentos.find(
+  const indice = agendamentos.findIndex(
     a => a.id == id
   );
 
-  if (!agendamento) {
+  if (indice == -1) {
     return res.status(404).json({
       erro: 'Agendamento não encontrado.'
     });
   }
 
-  const conflito = agendamentos.find(a =>
-    a.profissionalId == req.body.profissionalId &&
-    a.dataHora == req.body.dataHora &&
-    a.id != id
-  );
+  const dataAgendamento =
+    new Date(agendamentos[indice].dataHora);
 
-  if (conflito) {
+  const agora = new Date();
+
+  const diferencaHoras =
+    (dataAgendamento - agora) / (1000 * 60 * 60);
+
+  if (diferencaHoras < 24) {
     return res.status(400).json({
-      erro: 'Horário indisponível.'
+      erro: 'Cancelamento permitido apenas com 24 horas de antecedência.'
     });
   }
 
-  agendamento.profissionalId = req.body.profissionalId;
-  agendamento.servicoId = req.body.servicoId;
-  agendamento.dataHora = req.body.dataHora;
+  agendamentos.splice(indice, 1);
 
-  res.json(agendamento);
+  res.json({
+    mensagem: 'Agendamento cancelado com sucesso.'
+  });
 });
