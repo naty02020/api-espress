@@ -1,63 +1,32 @@
-function autenticar(req, res, next) {
-  console.log('Autenticado com sucesso');
-  next();
-}
+app.put('/agendamentos/:id', (req, res) => {
 
-function registrarLog(req, res, next) {
-  console.log(`${req.method} ${req.originalUrl}`);
-  next();
-}
+  const id = parseInt(req.params.id);
 
-function validarAgendamento(req, res, next) {
-  const {
-    clienteId,
-    profissionalId,
-    servicoId,
-    dataHora
-  } = req.body;
+  const agendamento = agendamentos.find(
+    a => a.id == id
+  );
 
-  if (!clienteId || !profissionalId || !servicoId || !dataHora) {
-    return res.status(400).json({
-      erro: 'Todos os campos são obrigatórios.'
+  if (!agendamento) {
+    return res.status(404).json({
+      erro: 'Agendamento não encontrado.'
     });
   }
 
-  next();
-}
+  const conflito = agendamentos.find(a =>
+    a.profissionalId == req.body.profissionalId &&
+    a.dataHora == req.body.dataHora &&
+    a.id != id
+  );
 
-app.post(
-  '/agendamentos',
-  [autenticar, validarAgendamento, registrarLog],
-  (req, res) => {
-
-    const {
-      clienteId,
-      profissionalId,
-      servicoId,
-      dataHora
-    } = req.body;
-
-    const conflito = agendamentos.find(a =>
-      a.profissionalId == profissionalId &&
-      a.dataHora == dataHora
-    );
-
-    if (conflito) {
-      return res.status(400).json({
-        erro: 'Esse horário já está ocupado.'
-      });
-    }
-
-    const novoAgendamento = {
-      id: agendamentos.length + 1,
-      clienteId,
-      profissionalId,
-      servicoId,
-      dataHora
-    };
-
-    agendamentos.push(novoAgendamento);
-
-    res.status(201).json(novoAgendamento);
+  if (conflito) {
+    return res.status(400).json({
+      erro: 'Horário indisponível.'
+    });
   }
-);
+
+  agendamento.profissionalId = req.body.profissionalId;
+  agendamento.servicoId = req.body.servicoId;
+  agendamento.dataHora = req.body.dataHora;
+
+  res.json(agendamento);
+});
